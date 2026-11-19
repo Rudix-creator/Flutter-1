@@ -1,30 +1,83 @@
-// // This is a basic Flutter widget test.
-// //
-// // To perform an interaction with a widget in your test, use the WidgetTester
-// // utility in the flutter_test package. For example, you can send tap and scroll
-// // gestures. You can also use WidgetTester to find child widgets in the widget
-// // tree, read text, and verify that the values of widget properties are correct.
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_application_1/main.dart';
+import 'package:flutter_application_1/cubit/notes_cubit.dart';
 
-// import 'package:flutter/material.dart';
-// import 'package:flutter_test/flutter_test.dart';
+void main() {
+  test('Editing and deleting preserve the correct note and importance', () {
+    final cubit = NotesCubit();
+    addTearDown(cubit.close);
+    cubit.saveNote('Первая');
+    cubit.saveNote('Вторая');
+    cubit.setImportant(1, true);
+    cubit.startEditing(1);
+    cubit.deleteNote(0);
+    expect(cubit.state.editingIndex, 0);
+    expect(cubit.state.notes.single.isImportant, isTrue);
+    cubit.saveNote('Изменённая');
+    expect(cubit.state.notes.single.text, 'Изменённая');
+    expect(cubit.state.notes.single.isImportant, isTrue);
+    expect(cubit.state.isEditing, isFalse);
+    cubit.setImportant(0, false);
+    expect(cubit.state.notes.single.isImportant, isFalse);
+    cubit.startEditing(0);
+    cubit.deleteNote(0);
+    expect(cubit.state.notes, isEmpty);
+    expect(cubit.state.isEditing, isFalse);
+  });
 
-// import 'package:flutter_application_1/main.dart';
+  testWidgets('All five note gestures work together', (tester) async {
+    await tester.pumpWidget(const NotesApp());
+    await tester.enterText(find.byType(TextField), 'Полный текст заметки');
+    await tester.tap(find.text('Сохранить'));
+    await tester.pumpAndSettle();
 
-// void main() {
-//   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-//     // Build our app and trigger a frame.
-//     await tester.pumpWidget(const MyApp());
+    await tester.tap(find.text('Полный текст заметки'));
+    await tester.pump(const Duration(milliseconds: 350));
+    await tester.pumpAndSettle();
+    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.text('Полный текст заметки'),
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Закрыть'));
+    await tester.pumpAndSettle();
 
-//     // Verify that our counter starts at 0.
-//     expect(find.text('0'), findsOneWidget);
-//     expect(find.text('1'), findsNothing);
+    await tester.tap(find.text('Полный текст заметки'));
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.tap(find.text('Полный текст заметки'));
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.star), findsOneWidget);
+    expect(find.byType(AlertDialog), findsNothing);
 
-//     // Tap the '+' icon and trigger a frame.
-//     await tester.tap(find.byIcon(Icons.add));
-//     await tester.pump();
+    await tester.longPress(find.text('Полный текст заметки'));
+    await tester.pumpAndSettle();
+    expect(find.text('Обновить'), findsOneWidget);
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).controller!.text,
+      'Полный текст заметки',
+    );
+    await tester.enterText(find.byType(TextField), 'Новый текст');
+    await tester.tap(find.text('Обновить'));
+    await tester.pumpAndSettle();
+    expect(find.text('Новый текст'), findsOneWidget);
+    expect(find.byIcon(Icons.star), findsOneWidget);
 
-//     // Verify that our counter has incremented.
-//     expect(find.text('0'), findsNothing);
-//     expect(find.text('1'), findsOneWidget);
-//   });
-// }
+    await tester.drag(find.byType(Dismissible), const Offset(600, 0));
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.star), findsNothing);
+    expect(find.text('Новый текст'), findsOneWidget);
+
+    await tester.drag(find.byType(Dismissible), const Offset(600, 0));
+    await tester.pumpAndSettle();
+    expect(find.text('Новый текст'), findsOneWidget);
+
+    await tester.drag(find.byType(Dismissible), const Offset(-600, 0));
+    await tester.pumpAndSettle();
+    expect(find.text('Новый текст'), findsNothing);
+    expect(find.text('Заметок пока нет'), findsOneWidget);
+  });
+}
