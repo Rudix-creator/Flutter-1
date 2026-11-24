@@ -108,98 +108,82 @@ class _NotesPageState extends State<NotesPage> {
                             itemBuilder: (context, index) {
                               final note = state.notes[index];
 
-                              return Dismissible(
+                              double swipeDistance = 0;
+
+                              return GestureDetector(
                                 key: ValueKey(note.id),
-                                background: Container(
-                                  color: Colors.blueGrey,
-                                  alignment: Alignment.centerLeft,
-                                  padding: const EdgeInsets.only(left: 20),
-                                  child: const Icon(
-                                    Icons.star_border,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                secondaryBackground: Container(
-                                  color: Colors.red,
-                                  alignment: Alignment.centerRight,
-                                  padding: const EdgeInsets.only(right: 20),
-                                  child: const Icon(
-                                    Icons.delete,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                confirmDismiss: (direction) async {
-                                  if (direction ==
-                                      DismissDirection.startToEnd) {
+                                onHorizontalDragStart: (_) => swipeDistance = 0,
+                                onHorizontalDragUpdate: (details) {
+                                  swipeDistance += details.delta.dx;
+                                },
+                                onHorizontalDragEnd: (_) {
+                                  if (swipeDistance < -50) {
+                                    context.read<NotesCubit>().deleteNote(
+                                      index,
+                                    );
+                                  } else if (swipeDistance > 50) {
                                     context.read<NotesCubit>().setImportant(
                                       index,
                                       false,
                                     );
-                                    return false;
                                   }
-                                  return true;
                                 },
-                                onDismissed: (_) => context
-                                    .read<NotesCubit>()
-                                    .deleteNote(index),
-                                child: GestureDetector(
-                                  onTap: () {
-                                    showDialog<void>(
-                                      context: context,
-                                      builder: (context) => AlertDialog(
-                                        title: const Text('Заметка'),
-                                        content: SingleChildScrollView(
-                                          child: Text(note.text),
+                                onTap: () {
+                                  showDialog<void>(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: const Text('Заметка'),
+                                      content: SingleChildScrollView(
+                                        child: Text(note.text),
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(context),
+                                          child: const Text('Закрыть'),
                                         ),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () =>
-                                                Navigator.pop(context),
-                                            child: const Text('Закрыть'),
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  },
-                                  onDoubleTap: () => context
-                                      .read<NotesCubit>()
-                                      .setImportant(index, true),
-                                  onLongPress: () => context
-                                      .read<NotesCubit>()
-                                      .startEditing(index),
-                                  child: Card(
-                                    color: note.isImportant
-                                        ? Colors.amber.shade100
+                                      ],
+                                    ),
+                                  );
+                                },
+                                onDoubleTap: () => context
+                                    .read<NotesCubit>()
+                                    .setImportant(index, true),
+                                onLongPress: () => context
+                                    .read<NotesCubit>()
+                                    .startEditing(index),
+                                child: Card(
+                                  color: note.isImportant
+                                      ? Colors.amber.shade100
+                                      : null,
+                                  child: ListTile(
+                                    leading: note.isImportant
+                                        ? const Icon(
+                                            Icons.star,
+                                            color: Colors.amber,
+                                          )
                                         : null,
-                                    child: ListTile(
-                                      leading: note.isImportant
-                                          ? const Icon(
-                                              Icons.star,
-                                              color: Colors.amber,
-                                            )
-                                          : null,
-                                      title: Text(
-                                        note.text,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      trailing: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          IconButton(
-                                            icon: const Icon(Icons.edit),
-                                            onPressed: () => context
-                                                .read<NotesCubit>()
-                                                .startEditing(index),
-                                          ),
-                                          IconButton(
-                                            icon: const Icon(Icons.delete),
-                                            onPressed: () => context
-                                                .read<NotesCubit>()
-                                                .deleteNote(index),
-                                          ),
-                                        ],
-                                      ),
+                                    title: Text(
+                                      note.text,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    trailing: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(Icons.edit),
+                                          onPressed: () => context
+                                              .read<NotesCubit>()
+                                              .startEditing(index),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.delete),
+                                          onPressed: () => context
+                                              .read<NotesCubit>()
+                                              .deleteNote(index),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ),

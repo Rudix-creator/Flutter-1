@@ -66,18 +66,27 @@ void main() {
     expect(find.text('Новый текст'), findsOneWidget);
     expect(find.byIcon(Icons.star), findsOneWidget);
 
-    await tester.drag(find.byType(Dismissible), const Offset(600, 0));
-    await tester.pumpAndSettle();
+    final card = find.byType(Card);
+    final cardPosition = tester.getRect(card);
+    final swipe = await tester.startGesture(tester.getCenter(card));
+    await swipe.moveBy(const Offset(100, 0));
+    await swipe.moveBy(const Offset(100, 0));
+    await tester.pump();
+    expect(tester.getRect(card), cardPosition);
+    expect(find.byIcon(Icons.star), findsOneWidget);
+    await swipe.up();
+    await tester.pump();
     expect(find.byIcon(Icons.star), findsNothing);
     expect(find.text('Новый текст'), findsOneWidget);
 
-    await tester.drag(find.byType(Dismissible), const Offset(600, 0));
+    await tester.drag(find.byKey(const ValueKey(0)), const Offset(600, 0));
     await tester.pumpAndSettle();
     expect(find.text('Новый текст'), findsOneWidget);
 
-    await tester.drag(find.byType(Dismissible), const Offset(-600, 0));
-    await tester.pumpAndSettle();
+    await tester.drag(find.byKey(const ValueKey(0)), const Offset(-600, 0));
+    await tester.pump();
     expect(find.text('Новый текст'), findsNothing);
     expect(find.text('Заметок пока нет'), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 350));
   });
 }
